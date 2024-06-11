@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON File Server</title>
+</head>
+<body>
+    <h1>JSON File Server</h1>
+
+    <!-- Form to upload JSON file -->
+    <h2>Upload JSON File</h2>
+    <form id="uploadForm">
+        <input type="file" id="jsonFile" name="jsonFile" accept=".json" required><br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <!-- Dropdown to select JSON file -->
+    <h2>Select JSON File</h2>
+    <select id="jsonSelect">
+        <option value="" selected disabled>Select JSON File</option>
+        <!-- JSON files will be dynamically populated here -->
+    </select>
+
+    <!-- Button to delete selected JSON file -->
+    <button id="deleteFileButton">Delete File</button>
+    
+    <!-- Display area for JSON data -->
+    <h2>Data</h2>
+    <pre id="data"></pre>
+
+    <!-- Form to add new data -->
+    <h2>Add Data</h2>
+    <form id="addForm">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br>
+        <label for="age">Age:</label>
+        <input type="number" id="age" name="age" required><br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br>
+        <button type="submit">Add</button>
+    </form>
+
+    <!-- Form to update existing data -->
+    <h2>Update Data</h2>
+    <form id="updateForm">
+        <label for="updateId">ID:</label>
+        <input type="text" id="updateId" name="updateId" required><br>
+        <label for="updateName">Name:</label>
+        <input type="text" id="updateName" name="updateName" required><br>
+        <label for="updateAge">Age:</label>
+        <input type="number" id="updateAge" name="updateAge" required><br>
+        <label for="updateEmail">Email:</label>
+        <input type="email" id="updateEmail" name="updateEmail" required><br>
+        <button type="submit">Update</button>
+    </form>
+
+    <!-- Form to delete existing data -->
+    <h2>Delete Data</h2>
+    <form id="deleteForm">
+        <label for="deleteId">ID:</label>
+        <input type="text" id="deleteId" name="deleteId" required><br>
+        <button type="submit">Delete</button>
+    </form>
+
+    <script>
+        // Function to fetch data from server
+        function fetchData(file) {
+            fetch(`/data?file=${file}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('data').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+    
+        // Function to fetch JSON files from the server
+        function fetchJSONFiles() {
+            fetch('/files')
+                .then(response => response.json())
+                .then(files => {
+                    const selectElement = document.getElementById('jsonSelect');
+                    // Clear existing options
+                    selectElement.innerHTML = '';
+                    // Add new options for each JSON file
+                    files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        selectElement.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching JSON files:', error));
+        }
+    
+        // Event listener for jsonSelect change
+        document.getElementById('jsonSelect').addEventListener('change', event => {
+            const selectedFile = event.target.value;
+            if (selectedFile) {
+                fetchData(selectedFile);
+            }
+        });
+    
+        // Event listener for uploadForm submission
+        document.getElementById('uploadForm').addEventListener('submit', event => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Failed to upload JSON file');
+                }
+            })
+            .then(data => {
+                console.log('Uploaded JSON file:', data);
+                fetchJSONFiles(); // Refresh file list after uploading
+            })
+            .catch(error => console.error('Error uploading JSON file:', error));
+        });
+    
+        // Event listener for addForm submission
+        document.getElementById('addForm').addEventListener('submit', event => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const selectedFile = document.getElementById('jsonSelect').value;
+            const newData = {
+                name: formData.get('name'),
+                age: parseInt(formData.get('age')),
+                email: formData.get('email')
+            };
+            fetch(`/data?file=${selectedFile}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Added data:', data);
+                fetchData(selectedFile); // Refresh data after adding
+            })
+            .catch(error => console.error('Error adding data:', error));
+        });
+    
+        // Event listener for updateForm submission
+        document.getElementById('updateForm').addEventListener('submit', event => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const selectedFile = document.getElementById('jsonSelect').value;
+            const updateId = formData.get('updateId');
+            const updatedData = {
+                name: formData.get('updateName'),
+                age: parseInt(formData.get('updateAge')),
+                email: formData.get('updateEmail')
+            };
+            fetch(`/data?file=${selectedFile}&id=${updateId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Updated data:', data);
+                fetchData(selectedFile); // Refresh data after updating
+            })
+            .catch(error => console.error('Error updating data:', error));
+        });
+    
+        // Event listener for deleteForm submission
+        document.getElementById('deleteForm').addEventListener('submit', event => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const selectedFile = document.getElementById('jsonSelect').value;
+            const deleteId = formData.get('deleteId');
+            fetch(`/data?file=${selectedFile}&id=${deleteId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Deleted data:', data);
+                // Refresh data after deleting
+                fetchData(selectedFile);
+            })
+            .catch(error => console.error('Error deleting data:', error));
+        });
+    
+        // Function to delete the selected JSON file
+        function deleteJSONFile(filename) {
+            fetch(`/deleteFile?filename=${filename}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('File deleted successfully');
+                    fetchJSONFiles(); // Refresh the list of JSON files
+                } else {
+                    throw new Error('Failed to delete file');
+                }
+            })
+            .catch(error => console.error('Error deleting file:', error));
+        }
+    
+        // Event listener for deleteFileButton click
+        document.getElementById('deleteFileButton').addEventListener('click', event => {
+            const selectedFile = document.getElementById('jsonSelect').value;
+            if (selectedFile) {
+                if (confirm(`Are you sure you want to delete "${selectedFile}"?`)) {
+                    deleteJSONFile(selectedFile);
+                }
+            } else {
+                alert('Please select a JSON file to delete.');
+            }
+        });
+    
+        // Fetch initial data and JSON files when the page loads
+        fetchJSONFiles();
+    </script>
+    
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "json-crud-file-server",
+  "version": "1.0.0",
+  "description": "A simple JSON File Server in Node.js that implements CRUD operations.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "GRUD",
+    "JSON",
+    "Server",
+    "File",
+    "Server"
+  ],
+  "author": "Ivan Grimm",
+  "license": "MIT",
+  "dependencies": {
+    "formidable": "^3.5.1",
+    "uuid": "^10.0.0"
+  }
+}
